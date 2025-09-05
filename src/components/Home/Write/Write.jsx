@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import ReactQuill from "react-quill";
-import "react-quill/dist/quill.bubble.css"; // Import Quill styles
+import "react-quill/dist/quill.bubble.css"; 
 import Preview from "./Preview";
 import { Blog } from "../../../Context/Context";
 
