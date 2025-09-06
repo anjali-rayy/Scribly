@@ -83,7 +83,7 @@ const Preview = ({ setPublish, description, title }) => {
   const [imageUrl, setImageUrl] = useState("");
   const [tags, setTags] = useState([]);
   const [desc, setDesc] = useState("");
-  const { currentUser } = Blog();
+  const { currentUser, allUsers } = Blog(); // Get both currentUser and allUsers
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -91,6 +91,14 @@ const Preview = ({ setPublish, description, title }) => {
     title: "",
     photo: null,
   });
+
+  // Get current user's data from allUsers array
+  const getCurrentUserData = () => {
+    if (!currentUser) return null;
+    return allUsers.find(user => user.userId === currentUser.uid || user.id === currentUser.uid);
+  };
+
+  const currentUserData = getCurrentUserData();
 
   useEffect(() => {
     if (title || description) {
@@ -182,6 +190,15 @@ const Preview = ({ setPublish, description, title }) => {
     }
   };
 
+  // Show loading state if user data is not available yet
+  if (!currentUser) {
+    return (
+      <section className="absolute inset-0 bg-white z-30 flex items-center justify-center">
+        <p>Please sign in to publish a post</p>
+      </section>
+    );
+  }
+
   return (
     <section className="absolute inset-0 bg-white z-30">
       <div className="size my-[2rem]">
@@ -234,7 +251,13 @@ const Preview = ({ setPublish, description, title }) => {
           <div className="flex-[1] flex flex-col gap-4 mb-5 md:mb-0">
             <h3 className="text-2xl">
               Publishing to:
-              <span className="font-bold capitalize"> Anjali Ray</span>
+              <span className="font-bold capitalize">
+                {" "}
+                {currentUserData?.username || 
+                 currentUser?.displayName || 
+                 currentUser?.email?.split('@')[0] || 
+                 "Your Profile"}
+              </span>
             </h3>
             <p>
               Add or change topics up to 5 so readers know what your story is

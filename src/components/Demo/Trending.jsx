@@ -131,14 +131,14 @@ const Trend = ({ trend, index }) => {
 
   return (
     <article className="flex flex-col gap-4 cursor-pointer hover:opacity-75 transition-opacity">
-      {/* Post number - styled like Medium */}
+      {/* Post number - styled like Scribly */}
       <div className="flex items-start gap-4">
         <span className="text-gray-300 text-3xl font-bold leading-none mt-1">
           {String(index + 1).padStart(2, '0')}
         </span>
         
         <div className="flex-1 flex flex-col gap-3">
-          {/* Author info section - Medium style */}
+          {/* Author info section - Scribly style */}
           <div 
             className="flex items-center gap-2 cursor-pointer hover:opacity-75"
             onClick={handleProfileClick}
