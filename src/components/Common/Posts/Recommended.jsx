@@ -37,8 +37,8 @@ const Recommended = ({ post: singlePost }) => {
   return (
     <section className="bg-gray-100">
       <div className="w-[90%] md:w-[90%] lg:w-[60%] mx-auto py-[3rem]">
-        <h2 className="text-xl font-bold">Recommended from Scribly</h2>
-        {commonTags.length < 0 ? (
+        <h2 className="text-xl font-bold">Recommended from Medium</h2>
+        {commonTags.length === 0 ? (
           <p>No recommended posts found based on your preference</p>
         ) : (
           <div className="grid grid-cols-card gap-[2rem] my-[3rem]">
@@ -57,11 +57,12 @@ export default Recommended;
 const Post = ({ post }) => {
   const { title, desc, created, postImg, id: postId, userId } = post;
   const { data } = useFetch("users");
+  const navigate = useNavigate();
 
-  const navigate = useNavigate(null);
+  // Fixed: Handle case where user is not found
+  const user = data?.find((user) => user?.id === userId);
+  const { username = "Unknown User", userImg = "/default-avatar.png" } = user || {};
 
-  const { username, userImg } =
-    data && data.find((user) => user?.id === userId);
   return (
     <div
       onClick={() => navigate(`/post/${postId}`)}

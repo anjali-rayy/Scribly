@@ -34,3 +34,54 @@ body {
   font-size: 1.2rem !important;
   padding: 0 !important;
 }
+
+/* Add these styles to your CSS file or use Tailwind equivalent classes */
+
+/* Line clamp utility - if not available in your Tailwind */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2; /* Add this line */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3; /* Add this line */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth transitions for hover effects */
+.transition-opacity {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Custom grid for trending posts */
+@media (min-width: 768px) {
+  .trending-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .trending-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Profile image hover effects */
+.profile-image-container:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Post title hover effects */
+.post-title:hover {
+  color: #1a73e8;
+  transition: color 0.2s ease-in-out;
+}

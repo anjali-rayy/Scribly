@@ -17,126 +17,201 @@ import Recommended from "./Recommended";
 import Comments from "../Comments/Comments";
 
 const SinglePost = () => {
+  // ALL HOOKS MUST BE CALLED AT THE TOP, UNCONDITIONALLY
   const { postId } = useParams();
-  const [post, setPost] = useState("");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const { currentUser } = Blog();
+  const hasIncrementedView = useRef(false);
+  
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // increment page views
-  const isInitialRender = useRef(true);
+  // TEMPORARILY DISABLED - Page view increment
+  /*
   useEffect(() => {
-    if (isInitialRender?.current) {
-      const incrementPageView = async () => {
+    const incrementPageView = async () => {
+      if (!hasIncrementedView.current && postId) {
         try {
           const ref = doc(db, "posts", postId);
-          await updateDoc(
-            ref,
-            {
-              pageViews: increment(1),
-            },
-            { merge: true }
-          );
+          await updateDoc(ref, {
+            pageViews: increment(1),
+          });
+          hasIncrementedView.current = true;
         } catch (error) {
-          toast.error(error.message);
+          console.error("Error incrementing page views:", error);
         }
-      };
-      incrementPageView();
-    }
-    isInitialRender.current = false;
-  }, []);
+      }
+    };
 
+    incrementPageView();
+  }, [postId]);
+  */
+
+  // Fetch post effect
   useEffect(() => {
+    if (!postId) {
+      setError("No post ID provided");
+      return;
+    }
+
     const fetchPost = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
         const postRef = doc(db, "posts", postId);
-        const getPost = await getDoc(postRef);
+        const postSnapshot = await getDoc(postRef);
 
-        if (getPost.exists()) {
-          const postData = getPost.data();
-          if (postData?.userId) {
-            const userRef = doc(db, "users", postData?.userId);
-            const getUser = await getDoc(userRef);
-
-            if (getUser.exists()) {
-              const { created, ...rest } = getUser.data();
-              setPost({ ...postData, ...rest, id: postId });
-            }
-          }
+        if (!postSnapshot.exists()) {
+          setError("Post not found");
+          setLoading(false);
+          return;
         }
+
+        const postData = postSnapshot.data();
+        
+        if (!postData?.userId) {
+          setPost({ ...postData, id: postId });
+          setLoading(false);
+          return;
+        }
+
+        // Fetch user data
+        try {
+          const userRef = doc(db, "users", postData.userId);
+          const userSnapshot = await getDoc(userRef);
+
+          if (userSnapshot.exists()) {
+            const { created: userCreated, ...userData } = userSnapshot.data();
+            setPost({ 
+              ...postData, 
+              ...userData, 
+              id: postId,
+              userCreated
+            });
+          } else {
+            console.warn(`User ${postData.userId} not found`);
+            setPost({ ...postData, id: postId });
+          }
+        } catch (userError) {
+          console.error("Error fetching user data:", userError);
+          setPost({ ...postData, id: postId });
+        }
+
         setLoading(false);
       } catch (error) {
-        toast.error(error.message);
+        console.error("Error fetching post:", error);
+        setError(error.message);
         setLoading(false);
+        
+        if (error.code === 'permission-denied') {
+          toast.error("Permission denied. Please check your access rights.");
+        } else {
+          toast.error(`Error loading post: ${error.message}`);
+        }
       }
     };
 
     fetchPost();
-  }, [postId, post?.userId]);
+  }, [postId]);
+
+  // CONDITIONAL RENDERING AFTER ALL HOOKS
+  if (error) {
+    return (
+      <div className="w-[90%] md:w-[80%] lg:w-[60%] mx-auto py-[3rem]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+          <p className="text-gray-600">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!post) {
+    return (
+      <div className="w-[90%] md:w-[80%] lg:w-[60%] mx-auto py-[3rem]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-600">Post not found</h2>
+        </div>
+      </div>
+    );
+  }
 
   const { title, desc, postImg, username, created, userImg, userId } = post;
 
-  const navigate = useNavigate();
-
   return (
     <>
-      {loading ? (
-        <Loading />
-      ) : (
-        <>
-          <section className="w-[90%] md:w-[80%] lg:w-[60%] mx-auto py-[3rem]">
-            <h2 className="text-4xl font-extrabold capitalize">{title}</h2>
-            <div className="flex items-center gap-2 py-[2rem]">
-              <img
-                onClick={() => navigate(`/profile/${userId}`)}
-                className="w-[3rem] h-[3rem] object-cover rounded-full cursor-pointer"
-                src={userImg}
-                alt="user-img"
-              />
-              <div>
-                <div className="capitalize">
-                  <span>{username} .</span>
-                  {currentUser && currentUser?.uid !== userId && (
-                    <FollowBtn userId={userId} />
-                  )}
-                </div>
-                <p className="text-sm text-gray-500">
-                  {readTime({ __html: desc })} min read .
-                  <span className="ml-1">{moment(created).fromNow()}</span>
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between border-b border-t border-gray-200 py-[0.5rem]">
-              <div className="flex items-center gap-5">
-                <Like postId={postId} />
-                <Comment />
-              </div>
-              <div className="flex items-center pt-2 gap-5">
-                {post && <SavedPost post={post} />}
-                <SharePost />
-                {currentUser && currentUser?.uid === post?.userId && (
-                  <Actions postId={postId} title={title} desc={desc} />
-                )}
-              </div>
-            </div>
-            <div className="mt-[3rem]">
-              {postImg && (
-                <img
-                  className="w-full h-[400px] object-cover"
-                  src={postImg}
-                  alt="post-img"
-                />
+      <section className="w-[90%] md:w-[80%] lg:w-[60%] mx-auto py-[3rem]">
+        <h2 className="text-4xl font-extrabold capitalize">{title}</h2>
+        <div className="flex items-center gap-2 py-[2rem]">
+          {userImg && (
+            <img
+              onClick={() => userId && navigate(`/profile/${userId}`)}
+              className="w-[3rem] h-[3rem] object-cover rounded-full cursor-pointer"
+              src={userImg}
+              alt="user-img"
+            />
+          )}
+          <div>
+            <div className="capitalize">
+              {username && <span>{username} .</span>}
+              {currentUser && currentUser?.uid !== userId && userId && (
+                <FollowBtn userId={userId} />
               )}
-              <div
-                className="mt-6"
-                dangerouslySetInnerHTML={{ __html: desc }}
-              />
             </div>
-          </section>
-          {post && <Recommended post={post} />}
-          <Comments postId={postId} />
-        </>
-      )}
+            <p className="text-sm text-gray-500">
+              {desc && `${readTime({ __html: desc })} min read`}
+              {created && (
+                <>
+                  <span className="mx-1">.</span>
+                  <span>{moment(created).fromNow()}</span>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-b border-t border-gray-200 py-[0.5rem]">
+          <div className="flex items-center gap-5">
+            <Like postId={postId} />
+            <Comment />
+          </div>
+          <div className="flex items-center pt-2 gap-5">
+            <SavedPost post={post} />
+            <SharePost />
+            {currentUser && currentUser?.uid === post?.userId && (
+              <Actions postId={postId} title={title} desc={desc} />
+            )}
+          </div>
+        </div>
+        <div className="mt-[3rem]">
+          {postImg && (
+            <img
+              className="w-full h-[400px] object-cover"
+              src={postImg}
+              alt="post-img"
+            />
+          )}
+          {desc && (
+            <div
+              className="mt-6"
+              dangerouslySetInnerHTML={{ __html: desc }}
+            />
+          )}
+        </div>
+      </section>
+      <Recommended post={post} />
+      <Comments postId={postId} />
     </>
   );
 };
