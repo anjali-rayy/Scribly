@@ -18,7 +18,7 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
 
   // Cloudinary configuration
   const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "your_cloud_name_here";
-  const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "profile_images";
+  const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "ml_default";
   const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
   const btn = "border border-green-600 py-2 px-5 rounded-full text-green-600";
@@ -38,7 +38,7 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
   // Enhanced file validation
   const validateFile = (file) => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    const maxSize = 10 * 1024 * 1024; // 10MB (Cloudinary free tier allows up to 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
 
     if (!allowedTypes.includes(file.type)) {
       toast.error("Please select a valid image file (JPG, PNG, or GIF)");
@@ -53,74 +53,98 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
     return true;
   };
 
-  // Upload to Cloudinary - Simplified and Fixed
+  // Upload to Cloudinary - Try multiple presets if one fails
   const uploadToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-    
-    try {
-      const response = await fetch(CLOUDINARY_URL, {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Cloudinary error:', errorData);
-        throw new Error(`Upload failed: ${errorData.error?.message || response.statusText}`);
+    const presetsToTry = [
+      CLOUDINARY_UPLOAD_PRESET,
+      'ml_default', // Fallback to default preset
+      'profile_images' // Your current preset
+    ];
+
+    for (const preset of presetsToTry) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", preset);
+        
+        console.log(`Trying upload preset: ${preset}`);
+
+        const response = await fetch(CLOUDINARY_URL, {
+          method: "POST",
+          body: formData,
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          console.log('Upload successful with preset:', preset, data.secure_url);
+          return data.secure_url;
+        } else {
+          console.warn(`Preset ${preset} failed:`, data.error);
+          // Continue to next preset
+          continue;
+        }
+      } catch (error) {
+        console.warn(`Preset ${preset} error:`, error.message);
+        // Continue to next preset
+        continue;
       }
-      
-      const data = await response.json();
-      return data.secure_url;
-    } catch (error) {
-      console.error("Upload error:", error);
-      throw new Error(`Image upload failed: ${error.message}`);
     }
+    
+    // If all presets failed
+    throw new Error('All upload presets failed. Please check your Cloudinary configuration.');
   };
 
   // Handle file selection with immediate upload
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    if (file && validateFile(file)) {
-      setUploading(true);
-      
-      try {
-        // Show preview immediately
-        const previewUrl = URL.createObjectURL(file);
-        setImgUrl(previewUrl);
-        
-        // Upload to Cloudinary
-        const cloudinaryUrl = await uploadToCloudinary(file);
-        
-        // Update form with the Cloudinary URL
-        setForm({ ...form, userImg: cloudinaryUrl });
-        
-        // Clean up preview URL
-        URL.revokeObjectURL(previewUrl);
-        setImgUrl(cloudinaryUrl);
-        
-        toast.success("Image uploaded successfully!");
-      } catch (error) {
-        console.error("Upload error:", error);
-        toast.error(error.message);
-        
-        // Reset on error
-        setImgUrl("");
-        e.target.value = '';
-      } finally {
-        setUploading(false);
-      }
-    } else {
-      // Reset file input on invalid file
+    if (!file) return;
+
+    if (!validateFile(file)) {
       e.target.value = '';
+      return;
+    }
+
+    setUploading(true);
+    
+    try {
+      // Show preview immediately
+      const previewUrl = URL.createObjectURL(file);
+      setImgUrl(previewUrl);
+      
+      // Upload to Cloudinary
+      const cloudinaryUrl = await uploadToCloudinary(file);
+      
+      // Update form with the Cloudinary URL
+      setForm(prev => ({ ...prev, userImg: cloudinaryUrl }));
+      
+      // Clean up preview URL and set final URL
+      URL.revokeObjectURL(previewUrl);
+      setImgUrl(cloudinaryUrl);
+      
+      toast.success("Image uploaded successfully!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error.message);
+      
+      // Reset on error
+      setImgUrl("");
+      setForm(prev => ({ ...prev, userImg: "" }));
+      e.target.value = '';
+    } finally {
+      setUploading(false);
     }
   };
 
   // Save form (now much simpler since image is already uploaded)
   const saveForm = async () => {
-    if (form["username"] === "" || form["bio"] === "") {
-      toast.error("All inputs are required!!!");
+    if (!form.username.trim()) {
+      toast.error("Username is required!");
+      return;
+    }
+
+    if (!form.bio.trim()) {
+      toast.error("Bio is required!");
       return;
     }
 
@@ -135,16 +159,15 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
       // Update Firestore document
       const docRef = doc(db, "users", getUserData?.userId);
       await updateDoc(docRef, {
-        bio: form.bio,
-        username: form.username,
-        userImg: form.userImg, // This is now the Cloudinary URL
+        bio: form.bio.trim(),
+        username: form.username.trim(),
+        userImg: form.userImg,
         userId: getUserData?.userId,
         updatedAt: new Date().toISOString(),
       });
       
-      setLoading(false);
-      setEditModal(false);
       toast.success("Profile has been updated successfully!");
+      setEditModal(false);
       
       // Clean up
       if (imgUrl && imgUrl.startsWith('blob:')) {
@@ -153,9 +176,10 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
       }
       
     } catch (error) {
-      setLoading(false);
       console.error("Save error:", error);
       toast.error(`Error updating profile: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,10 +189,18 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
       URL.revokeObjectURL(imgUrl);
     }
     setImgUrl("");
-    setForm({ ...form, userImg: "" });
+    setForm(prev => ({ ...prev, userImg: "" }));
     if (imgRef.current) {
       imgRef.current.value = '';
     }
+  };
+
+  // Handle modal close with cleanup
+  const handleModalClose = () => {
+    if (imgUrl && imgUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(imgUrl);
+    }
+    setEditModal(false);
   };
 
   return (
@@ -177,7 +209,7 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
         {/* head  */}
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-xl">Profile information</h2>
-          <button onClick={() => setEditModal(false)} className="text-xl">
+          <button onClick={handleModalClose} className="text-xl">
             <LiaTimesSolid />
           </button>
         </div>
@@ -189,7 +221,7 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
             <div className="w-[5rem] relative">
               <img
                 className="min-h-[5rem] min-w-[5rem] object-cover border border-gray-400 rounded-full"
-                src={imgUrl ? imgUrl : form.userImg ? form.userImg : "/profile.jpg"}
+                src={imgUrl || form.userImg || "/profile.jpg"}
                 alt="profile-img"
               />
               {uploading && (
@@ -199,7 +231,7 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
               )}
               <input
                 onChange={handleFileChange}
-                accept="image/jpg, image/png, image/jpeg, image/gif"
+                accept="image/jpeg,image/jpg,image/png,image/gif"
                 ref={imgRef}
                 type="file"
                 hidden
@@ -210,14 +242,14 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
               <div className="flex gap-4 text-sm">
                 <button 
                   onClick={openFile} 
-                  className="text-green-600"
+                  className="text-green-600 disabled:opacity-50"
                   disabled={uploading}
                 >
                   {uploading ? "Uploading..." : "Update"}
                 </button>
                 <button 
                   onClick={removeImage} 
-                  className="text-red-600"
+                  className="text-red-600 disabled:opacity-50"
                   disabled={uploading}
                 >
                   Remove
@@ -238,16 +270,18 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
         
         {/* Profile edit form  */}
         <section className="pt-[1rem] text-sm">
-          <label className="pb-3 block" htmlFor="">
+          <label className="pb-3 block" htmlFor="username">
             Name*
           </label>
           <input
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            id="username"
+            onChange={(e) => setForm(prev => ({ ...prev, username: e.target.value }))}
             value={form.username}
             type="text"
-            placeholder="username..."
+            placeholder="Enter your username..."
             className="p-1 border-b border-black w-full outline-none"
             maxLength={50}
+            disabled={loading || uploading}
           />
           <p className="text-sm text-gray-600 pt-2">
             Appears on your Profile page, as your byline, and in your responses.
@@ -255,16 +289,18 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
           </p>
           
           <section className="pt-[1rem] text-sm">
-            <label className="pb-3 block" htmlFor="">
+            <label className="pb-3 block" htmlFor="bio">
               Bio*
             </label>
             <input
-              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              id="bio"
+              onChange={(e) => setForm(prev => ({ ...prev, bio: e.target.value }))}
               value={form.bio}
               type="text"
-              placeholder="bio..."
+              placeholder="Tell us about yourself..."
               className="p-1 border-b border-black w-full outline-none"
               maxLength={160}
+              disabled={loading || uploading}
             />
             <p className="text-sm text-gray-600 pt-2">
               Appears on your Profile and next to your stories.{" "}
@@ -276,18 +312,17 @@ const EditProfile = ({ editModal, setEditModal, getUserData }) => {
         {/* foot  */}
         <div className="flex items-center justify-end gap-4 pt-[2rem]">
           <button 
-            onClick={() => setEditModal(false)} 
-            className={btn}
+            onClick={handleModalClose} 
+            className={`${btn} disabled:opacity-50`}
             disabled={loading || uploading}
           >
             Cancel
           </button>
           <button
             onClick={saveForm}
-            disabled={loading || uploading || !form.userImg}
-            className={`${btn} bg-green-800 text-white ${
-              (loading || uploading || !form.userImg) ? "opacity-50 cursor-not-allowed" : ""
-            }`}>
+            disabled={loading || uploading || !form.userImg || !form.username.trim() || !form.bio.trim()}
+            className={`${btn} bg-green-800 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
             {loading ? "Saving..." : uploading ? "Uploading..." : "Save"}
           </button>
         </div>

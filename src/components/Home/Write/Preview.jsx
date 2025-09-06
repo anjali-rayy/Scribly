@@ -227,7 +227,7 @@ const Preview = ({ setPublish, description, title }) => {
             />
             <p className="text-gray-500 pt-4 text-sm">
               <span className="font-bold">Note:</span> Changes here will affect
-              how your story appears in public places like Medium's homepage and
+              how your story appears in public places like Scribly's homepage and
               in subscribers' inboxes — not the contents of the story itself.
             </p>
           </div>
