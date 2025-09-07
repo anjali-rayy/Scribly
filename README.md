@@ -1,59 +1,61 @@
-Scribly
+✍️ Scribly
 
-Scribly is a minimalist blogging platform inspired by Medium, built using React and Vite. It offers a clean and intuitive interface for writers and readers alike.
+Scribly is a modern blogging platform inspired by Medium
+.
+It’s built with React and Vite, offering a clean, minimal, and responsive interface for writers and readers alike.
 
 🔗 Live Demo: scribly-blog.netlify.app
 
-Features
+🚀 Features
 
-Responsive Design: Optimized for both desktop and mobile devices.
+Responsive Design – Works seamlessly on desktop and mobile.
 
-Rich Text Editor: Supports formatting, images, and links.
+Rich Text Editor – Format text, add images, and insert links.
 
-User Authentication: Secure login and registration system.
+User Authentication – Secure login and registration.
 
-Markdown Support: Write posts using Markdown syntax.
+Markdown Support – Write posts easily using Markdown.
 
-Commenting System: Engage with readers through comments.
+Commenting System – Engage with readers through comments.
 
-Technologies Used
+🛠️ Technologies Used
 
 Frontend: React, Vite
 
 Styling: Tailwind CSS
 
-Linting: ESLint
+Linting & Code Quality: ESLint
 
-Getting Started
-
-To set up the project locally:
-
-Clone the repository:
-
+⚡ Getting Started
+1. Clone the repository
 git clone https://github.com/anjali-rayy/Scribly.git
 
-
-Navigate into the project directory:
-
+2. Navigate to the project folder
 cd Scribly
 
-
-Install dependencies:
-
+3. Install dependencies
 npm install
 
-
-Start the development server:
-
+4. Start the development server
 npm run dev
 
 
-The application will be accessible at http://localhost:3000.
+The app will run at: http://localhost:5173/
 
-Contributing
+🤝 Contributing
 
-Contributions are welcome! Please fork the repository, create a new branch, and submit a pull request.
+Contributions are welcome! Please follow these steps:
 
-License
+Fork the repository
+
+Create a new branch (git checkout -b feature-name)
+
+Commit your changes (git commit -m "Add feature")
+
+Push to your branch (git push origin feature-name)
+
+Open a Pull Request
+
+📄 License
 
 This project is licensed under the MIT License.
