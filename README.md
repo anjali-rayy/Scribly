@@ -46,18 +46,16 @@ This creates a copy in your GitHub account.
 git clone https://github.com/your-username/Scribly.git
 cd Scribly
 
-### Step 4: Install Dependencies
+Step 4: Install Dependencies
 npm install
 
-### Step 5: Start the Development Server
+Step 5: Start the Development Server
 npm run dev
-
----
 
 Open http://localhost:5173
  in your browser.
 
-## ⚙️ Configuration
+⚙️ Configuration
 
 Tailwind CSS: Configured in tailwind.config.js
 
@@ -65,9 +63,7 @@ ESLint: Linting rules in .eslintrc.js
 
 Vite: Development and build settings in vite.config.js
 
----
-
-## 📁 Project Structure
+📁 Project Structure
 Scribly/
 ├─ public/                # Static files
 ├─ src/
@@ -81,9 +77,8 @@ Scribly/
 ├─ vite.config.js
 └─ package.json
 
----
 
-## 🤝 Contribution
+🤝 Contribution
 
 Contributions are welcome!
 
@@ -97,21 +92,16 @@ Push to the branch (git push origin feature/YourFeature)
 
 Open a Pull Request
 
----
-
-## 📜 License
+📜 License
 
 This project is licensed under the MIT License — see the LICENSE
  file for details.
 
----
-
-## 👤 Created By
+👤 Created By
 
 Anjali Ray
 
----
 
-## ⭐ If this project helped you create an amazing blogging platform, don't forget to star this repository!
+⭐ If this project helped you create an amazing blogging platform, don't forget to star this repository!
 
 Happy coding!
