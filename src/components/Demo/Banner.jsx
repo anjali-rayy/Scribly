@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Auth from "./Auth/Auth";
+import FlowerDecoration from "./FlowerDecoration"; // Adjust path as needed
 
 const Banner = () => {
   const [modal, setModal] = useState(false);
@@ -10,8 +11,8 @@ const Banner = () => {
 
   return (
     <>
-      <div className="bg-amber-400 border-b border-black">
-        <div className="size py-[5rem] flex flex-col items-start gap-[1rem]">
+      <div className="bg-amber-400 border-b border-black relative overflow-hidden">
+        <div className="size py-[5rem] flex flex-col items-start gap-[1rem] relative z-20">
           <h1 className="font-serif text-[3rem] sm:text-[4rem] md:text-[6rem] font-black leading-tight">
             Stay curious.
           </h1>
@@ -25,6 +26,9 @@ const Banner = () => {
             Start reading
           </button>
         </div>
+        
+        {/* Add the flower decoration */}
+        <FlowerDecoration />
       </div>
 
       {/* Auth Modal */}
